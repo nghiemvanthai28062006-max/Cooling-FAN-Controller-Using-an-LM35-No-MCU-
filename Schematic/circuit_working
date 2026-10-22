@@ -1,0 +1,110 @@
+PHẦN 1: NGUYÊN LÝ HOẠT ĐỘNG & ĐƯỜNG ĐI CỦA DÒNG ĐIỆN/TÍN HIỆU
+Mạch hoạt động dựa trên việc so sánh nhiệt độ thực tế với một mức nhiệt độ cài đặt trước. Nếu nhiệt độ vượt ngưỡng, quạt tự động quay.
+
+1.1. Luồng Nguồn (Cấp điện)
+
+Đầu vào: Nguồn 1 chiều (5V - 12V) cấp vào giắc H1.
+
+Đường VCC (Dương): Từ H1 chạy lên đường ray VCC, cấp điện cho IC LM358 (chân 8), cảm biến LM35 (chân 1 qua H2), cầu phân áp (R1), Quạt (H3) và mạch LED báo (R5, LED1).
+
+Đường GND (Âm): Từ H1 chạy xuống mass chung. Tất cả các chân âm của linh kiện đều nối xuống đường này.
+
+1.2. Luồng Tín Hiệu (Xử lý Analog)
+
+Đo nhiệt độ: Cảm biến LM35 (cắm qua H2) đo nhiệt độ môi trường và xuất ra điện áp Analog (10mV/1°C) tại chân 2 (VOUT). Điện áp này đi qua tụ lọc C4 và vào chân 3 (IN+) của Op-Amp U1A.
+
+Cài đặt ngưỡng: Cầu phân áp R1 (10k) và Biến trở R2 (2k) tạo ra một mức điện áp chuẩn. Điện áp này đi vào chân 2 (IN-) của Op-Amp U1A. Vặn biến trở R2 sẽ thay đổi mức điện áp ngưỡng này.
+
+So sánh: Op-Amp U1A liên tục so sánh điện áp ở 2 chân:
+
+Nếu V_IN+ < V_IN- (Nhiệt độ < Ngưỡng cài đặt): Ngõ ra chân 1 xuất ra 0V (Mức thấp). Quạt tắt.
+
+Nếu V_IN+ > V_IN- (Nhiệt độ > Ngưỡng cài đặt): Ngõ ra chân 1 xuất ra Mức cao (gần bằng VCC). Quạt chạy.
+
+Chống nhiễu giật (Hysteresis): Điện trở R4 (2.2 MΩ) được mắc hồi tiếp từ chân 1 về chân 3. Khi ngõ ra lên mức cao, nó bơm một lượng điện áp nhỏ ngược về chân 3, tạo ra một vùng trễ an toàn. Nhờ đó, quạt không bị bật/tắt liên tục khi nhiệt độ dao động quanh mức ngưỡng.
+
+1.3. Luồng Công Suất (Đóng cắt tải)
+
+Tín hiệu Mức cao từ chân 1 (U1A) đi qua điện trở hạn dòng R3 (470R) để vào cực G (Gate) của MOSFET Q1.
+
+Khi cực G có điện áp cao, Q1 mở (dẫn điện từ chân D xuống chân S).
+
+Dòng điện 12V từ VCC chạy qua Quạt (H3) -> vào chân D (Drain) -> thoát xuống chân S (Source) -> xuống GND. Quạt quay.
+
+PHẦN 2: CHỨC NĂNG CỦA TỪNG LINH KIỆN
+
+H1 (Nguồn vào): Cấp nguồn DC (5-12V) cho toàn mạch.
+
+H2 (Cảm biến LM35): Cảm biến nhiệt độ tuyến tính. Cứ 1°C tương ứng với 10mV ngõ ra. C4 (0.1uF) đặt sát chân để lọc nhiễu tín hiệu Analog.
+
+H3 (Quạt): Nơi kết nối tải (quạt 12V).
+
+U1A (1/2 IC LM358): Op-Amp đóng vai trò là bộ so sánh (Comparator). Khuếch đại sự chênh lệch điện áp giữa 2 chân IN+ và IN- để đưa ra quyết định Bật/Tắt.
+
+U1B (1/2 IC LM358): Không dùng đến. Chân 5 nối GND, chân 6 nối tắt lên chân 7 (mạch đệm) để triệt tiêu nhiễu, tránh làm sai lệch con U1A. Chân 8 và 4 được đánh dấu No ERC.
+
+R1 (10k) & R2 (2k - Biến trở): Tạo thành cầu phân áp, dùng để điều chỉnh điện áp ngưỡng (cài đặt nhiệt độ).
+
+R4 (2.2 MΩ): Điện trở hồi tiếp dương. Tạo tính trễ (Hysteresis) cho mạch so sánh, chống hiện tượng quạt bật tắt liên tục (Chattering) khi nhiệt độ nằm sát ngưỡng cài đặt.
+
+R3 (470R): Điện trở hạn dòng, bảo vệ cực G của MOSFET khỏi dòng điện quá lớn từ Op-Amp.
+
+D2 (Zener 4.7V): Kẹp điện áp. Bảo vệ cực G của Q1 không bao giờ bị vượt quá 4.7V (dù Op-Amp xuất ra 12V).
+
+R6 (10k): Điện trở kéo xuống (Pull-down). Kéo cực G của Q1 xuống 0V khi không có tín hiệu, chống hiện tượng nhiễu làm Q1 tự mở (quạt tự quay).
+
+Q1 (IRLZ44N - N-MOSFET): Công tắc điện tử (vỏ TO-220). Đóng cắt dòng điện lớn cho quạt dựa trên tín hiệu điện áp nhỏ từ Op-Amp.
+
+R5 (470R) & LED1: Mạch báo hiệu. Khi Q1 mở, LED sáng báo hiệu quạt đang chạy. R5 hạn chế dòng để không cháy LED.
+
+D1 (1N4007): Diode dập xung ngược (Flyback diode). Bảo vệ Q1 khỏi bị đánh thủng bởi xung điện áp cao sinh ra từ cuộn dây quạt khi ngắt điện.
+
+C2 (0.1uF) & C3 (10uF): Tụ lọc nguồn. C2 lọc nhiễu tần số cao, C3 lọc gợn sóng (ripple) tần số thấp, ổn định nguồn VCC cấp cho IC.
+
+C1 (10uF): Tụ lọc nhiễu cục bộ cho động cơ quạt. Tạo đường tắt dập tắt các xung nhiễu cao tần sinh ra từ chổi than động cơ.
+
+PHẦN 3: CHUYÊN SÂU VỀ XUNG DẬP NGƯỢC & NHIỄU ĐỘNG CƠ (D1 & C1)
+Động cơ quạt là một nguồn phát nhiễu cực kỳ khó chịu. Đây là lý do tại sao trong mạch không thể thiếu cặp đôi D1 và C1.
+
+3.1. Xung dập ngược (Back-EMF) là gì? Tại sao lại nguy hiểm?
+
+Bản chất vật lý: Cuộn dây bên trong động cơ quạt có tính cảm kháng (L). Khi dòng điện chạy qua cuộn cảm đột ngột bị ngắt (khi Q1 đóng), từ trường sụp đổ và sinh ra một suất điện động cảm ứng ngược (Back-EMF).
+
+Mức độ nguy hiểm: Điện áp này có thể lên tới hàng trăm Volt (dù nguồn cấp chỉ 12V) và có cực tính ngược lại. Nếu đánh thẳng vào chân D của MOSFET Q1, nó sẽ xuyên thủng lớp bán dẫn và làm nổ Q1 ngay lập tức.
+
+Nhiệm vụ của D1 (1N4007): D1 được mắc song song với quạt nhưng ngược chiều (Cathode hướng lên VCC, Anode hướng xuống chân D). Khi xung ngược xuất hiện, D1 lập tức được phân cực thuận, tạo thành một vòng lặp kín dẫn dòng xung ngược chạy vòng qua cuộn dây và D1 để tự triệt tiêu năng lượng, bảo vệ Q1 an toàn.
+
+3.2. Nhiễu cao tần từ động cơ và nhiệm vụ của C1
+
+Nguồn gốc nhiễu: Khi động cơ quay, chổi than cọ xát liên tục vào cổ góp tạo ra các tia lửa điện nhỏ (Sparking). Tia lửa điện này chính là nguồn phát sóng điện từ (EMI) tần số cao. Nếu không được xử lý, nhiễu này sẽ chạy ngược về đường nguồn 12V, chui vào IC LM358 làm sai lệch kết quả so sánh, khiến quạt chạy loạn xạ.
+
+Cơ chế hoạt động của C1: Tụ điện có đặc tính tần số càng cao, trở kháng càng nhỏ. C1 (10uF) được mắc song song ngay sát 2 cực của quạt. Các xung nhiễu cao tần sinh ra sẽ "nhìn thấy" C1 như một đường cao tốc dẫn điện trở kháng cực thấp. Thay vì chạy ngược về nguồn, nhiễu sẽ chạy vòng qua C1 để khép kín mạch tại chỗ. C1 hoạt động như một bức tường cách âm, nhốt toàn bộ nhiễu cao tần lại khu vực động cơ.
+
+Sự kết hợp của C1 và D1: C1 dập tắt các nhiễu tần số cao liên tục trong lúc quạt quay. D1 dập tắt xung năng lượng lớn khi quạt ngắt điện đột ngột.
+
+PHẦN 4: CÁC ĐIỂM LƯU Ý & GIẢI ĐÁP THẮC MẮC
+4.1. Op-Amp so sánh hoạt động như thế nào?
+
+Công thức: V_out = A x (V_IN+ - V_IN-). Hệ số khuếch đại A vòng hở của Op-Amp là cực lớn (hàng trăm ngàn lần). Do đó, chỉ cần V_IN+ nhích hơn V_IN- đúng 0.0001V, ngõ ra lập tức bị "đập trần" lên mức cao nhất (gần bằng VCC) hoặc bị "đập sàn" xuống 0V. Nó hoạt động như một công tắc logic.
+
+4.2. Tại sao cần điện trở hồi tiếp R4 (2.2 MΩ)?
+
+Nếu không có R4, khi nhiệt độ giao động quanh ngưỡng cài đặt (ví dụ ngưỡng là 30°C, nhiệt độ nhảy giữa 29.99°C và 30.01°C), Op-Amp sẽ liên tục xuất mức Cao - Thấp - Cao - Thấp. Quạt sẽ bị giật bật/tắt liên tục (Chattering) rất nhanh, làm hỏng quạt và MOSFET.
+
+R4 tạo ra vùng trễ (Hysteresis). Khi quạt đã bật (do nhiệt độ > 30°C), R4 sẽ kéo mức điện áp ngưỡng xuống thấp hơn một chút (ví dụ tương đương 29°C). Phải đến khi nhiệt độ giảm hẳn xuống dưới 29°C thì quạt mới tắt. Điều này giúp quạt chạy êm ái, không bị giật.
+
+4.3. Cơ chế lọc nhiễu nguồn của tụ điện (C2, C3)?
+
+Công thức trở kháng: Zc = 1 / (2 x pi x f x C). Tần số f càng cao thì Zc càng nhỏ. Lọc nguồn (C2, C3): Mắc song song từ VCC xuống GND. Nhiễu cao tần sẽ thấy tụ có trở kháng nhỏ nên "chui" xuống GND, không đi vào IC. C2 lọc nhiễu siêu cao tần, C3 lọc gợn sóng tần số thấp.
+
+4.4. Diode Zener D2 hoạt động thế nào?
+
+Nếu điện áp đặt vào < 4.7V: D2 coi như hở mạch, không dẫn điện. Nếu điện áp đặt vào > 4.7V: D2 dẫn điện ngược, "ghim" điện áp lại ở mức 4.7V để bảo vệ MOSFET.
+
+4.5. MOSFET Q1 hoạt động ra sao?
+
+Điều khiển bằng điện áp (Vgs), dòng vào cực G (Ig) xấp xỉ 0. Để Q1 mở hoàn toàn, cần cấp Vgs khoảng 2.5V - 4.5V (Zener 4.7V đảm bảo điều này). Khi Q1 khóa: Chân D nhận 12V qua cuộn quạt. Khi Q1 mở: Chân D bị kéo xuống 0V, dòng chạy qua quạt làm quạt quay.
+
+4.6. Tại sao R6 (10k) lại cần thiết?
+
+R6 là trở Pull-down. Khi không có tín hiệu, nó kéo chân G xuống 0V. Nếu thiếu R6, chân G có thể bị "lơ lửng", nhiễu điện từ môi trường sẽ làm Q1 tự mở (quạt quay dù chưa đủ nhiệt độ).
